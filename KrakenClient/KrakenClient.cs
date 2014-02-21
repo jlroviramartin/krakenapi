@@ -217,22 +217,27 @@ namespace KrakenClient
         //Get a public list of tradable asset pairs
         public JsonObject GetAssetPairs(List<string> pairs)
         {
+            StringBuilder pairString = new StringBuilder();
 
             if (pairs == null)
             {
-                return null;
+                //do nothing, had to pass an empty string.
             }
-            if (pairs.Count() == 0)
+            else if (pairs.Count() == 0)
             {
                 return null;
             }
+            else
+            {
+                pairString.Append("pair=");
 
-            StringBuilder pairString = new StringBuilder("pair=");
-            foreach (var item in pairs)
-            {
-                pairString.Append(item + ",");
+                foreach (var item in pairs)
+                {
+                    pairString.Append(item + ",");
+                }
+                pairString.Length--; //disregard trailing comma    
             }
-            pairString.Length--; //disregard trailing comma
+            
 
             return QueryPublic("AssetPairs",pairString.ToString()) as JsonObject;
         }
