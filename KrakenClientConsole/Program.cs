@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using KrakenClient;
-using Jayrock.Json.Conversion;
 using System.Collections;
 using System.Globalization;
-using Jayrock.Json;
 using System.Threading;
+using Jayrock.Json;
+using Jayrock.Json.Conversion;
+
 
 namespace KrakenClientConsole
 {
@@ -16,12 +17,13 @@ namespace KrakenClientConsole
     {
 
         public static  KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
-      
+        public static Broker broker = new Broker();
+        
         public static void Main(string[] args)
         {
-            KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
-
             Console.WriteLine("calling kraken api...\n\n");
+            
+            #region Simple requests
 
             //var time = client.GetServerTime();
             //Console.WriteLine("time: " + time.ToString() + "\n\n");
@@ -59,8 +61,8 @@ namespace KrakenClientConsole
             //var queryOrders = client.QueryOrders(string.Empty);
             //Console.WriteLine("query orders: " + queryOrders.ToString() + "\n\n");
 
-            var tradesHistory = client.GetTradesHistory(string.Empty);
-            Console.WriteLine("trades history: " + tradesHistory.ToString() + "\n\n");
+            //var tradesHistory = client.GetTradesHistory(string.Empty);
+            //Console.WriteLine("trades history: " + tradesHistory.ToString() + "\n\n");
 
             //var queryTrades = client.QueryTrades();
             //Console.WriteLine("query trades: " + queryTrades.ToString() + "\n\n");
@@ -76,12 +78,16 @@ namespace KrakenClientConsole
 
             //var tradeVolume = client.GetTradeVolume();
             //Console.WriteLine("trade volume: " + tradeVolume.ToString() + "\n\n");
+            
+            #endregion
+           
+            #region Simple trading requests
 
             //var closeDictionary = new Dictionary<string,string>();
             //closeDictionary.Add("ordertype","stop-loss-profit");
             //closeDictionary.Add("price","#5%");
             //closeDictionary.Add("price2","#10");
-            
+
             //var addOrderRes = client.AddOrder("XXBTZEUR",
             //    "buy",
             //    "limit",
@@ -101,13 +107,155 @@ namespace KrakenClientConsole
 
             //var cancelOrder = client.CancelOrder("");
             //Console.WriteLine("cancel order : " + cancelOrder.ToString());
-                
+            
+            #endregion
 
-            Console.ReadLine();
+            #region Using the broker helper
 
+            KrakenOrder openingOrder = broker.CreateOpeningOrder(OrderType.buy, KrakenOrderType.limit, 300, 10,viqc:true,validateOnly: false);
 
+            PlaceOrder(ref openingOrder, false);
+
+            CancelOrder(ref openingOrder);
+            
+            #endregion    
+
+            Console.ReadKey();
         }
 
 
+
+        public static void PlaceOrder(ref KrakenOrder order, bool wait)
+        {
+            try
+            {
+
+                Console.WriteLine("Placing order...");
+
+                var placeOrderResult = broker.PlaceOrder(ref order,wait);
+
+                switch (placeOrderResult.ResultType)
+                {
+                    case PlaceOrderResultType.error:
+                        Console.WriteLine("An error occured while placing the order");
+                        foreach (var item in placeOrderResult.Errors)
+                        {
+                            Console.WriteLine(item);
+                        }
+                        break;
+                    case PlaceOrderResultType.success:
+                        Console.WriteLine(string.Format("Succesfully placed order {0}", order.TxId));
+                        break;
+                    case PlaceOrderResultType.partial:
+                        Console.WriteLine(string.Format("Partially filled order {0}. {1} of {2}", order.TxId, order.VolumeExecuted, order.Volume));
+                        break;
+                    case PlaceOrderResultType.txid_null:
+                        Console.WriteLine(string.Format("Order was not placed. Unknown reason"));
+                        break;
+                    case PlaceOrderResultType.canceled_not_partial:
+                        Console.WriteLine(string.Format("The order was cancelled. Reason: {0}", order.Reason));
+                        break;
+                    case PlaceOrderResultType.exception:
+                        Console.WriteLine(string.Format("Something went wrong. {0}", order.Reason));
+                        break;
+                    default:
+                        Console.WriteLine(string.Format("unknown PlaceOrderResultType {0}", placeOrderResult.ResultType));
+                        break;
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Something went wrong " + ex.Message);
+                throw;
+            }
+        }
+
+        public static void ClosePositionAndWaitForConfirmation(ref KrakenOrder openingOrder, decimal limitPrice)
+        {
+
+            try
+            {
+                Console.WriteLine("Closing position...");
+
+                var closingOrder = broker.CreateClosingOrder(openingOrder, limitPrice, false);
+
+                var closePositionResult = broker.PlaceOrder(ref closingOrder,true);
+
+                switch (closePositionResult.ResultType)
+                {
+                    case PlaceOrderResultType.error:
+                        Console.WriteLine("An error occured while placing the order");
+                        foreach (var item in closePositionResult.Errors)
+                        {
+                            Console.WriteLine(item);
+                        }
+                        break;
+                    case PlaceOrderResultType.success:
+                        Console.WriteLine(string.Format("Succesfully placed order {0}", closingOrder.TxId));
+                        break;
+                    case PlaceOrderResultType.partial:
+                        Console.WriteLine(string.Format("Partially filled order {0}. {1} of {2}", closingOrder.TxId, closingOrder.VolumeExecuted, closingOrder.Volume));
+                        break;
+                    case PlaceOrderResultType.txid_null:
+                        Console.WriteLine(string.Format("Order was not placed. Unknown reason"));
+                        break;
+                    case PlaceOrderResultType.canceled_not_partial:
+                        Console.WriteLine(string.Format("The order was canceled. Reason: {0}", closingOrder.Reason));
+                        break;
+                    case PlaceOrderResultType.exception:
+                        Console.WriteLine(string.Format("Something went wrong. {0}", closingOrder.Reason));
+                        break;
+                    default:
+                        Console.WriteLine(string.Format("unknown PlaceOrderResultType {0}", closePositionResult.ResultType));
+                        break;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(string.Format("Something went wrong. {0}", ex.Message));
+                throw;
+            }
+        }
+
+        public static void CancelOrder(ref KrakenOrder order)
+        {
+            try
+            {
+
+                Console.WriteLine("Cancelling order...");
+
+                var cancelOrderResult = broker.CancelOrder(ref order);
+
+                switch (cancelOrderResult.ResultType)
+                {
+                    case CancelOrderResultType.error:
+                        Console.WriteLine("An error occured while cancelling the order");
+                        foreach (var item in cancelOrderResult.Errors)
+                        {
+                            Console.WriteLine(item);
+                        }
+                        break;
+                    case CancelOrderResultType.success:
+                        Console.WriteLine(string.Format("Succesfully cancelled order {0}", order.TxId));
+                        break;
+                    case CancelOrderResultType.exception:
+                        Console.WriteLine(string.Format("Something went wrong. {0}", order.Reason));
+                        break;
+                    default:
+                        Console.WriteLine(string.Format("unknown CancelOrderResultType {0}", cancelOrderResult.ResultType));
+                        break;
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Something went wrong " + ex.Message);
+                throw;
+            }
+        }
     }
 }

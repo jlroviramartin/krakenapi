@@ -707,7 +707,7 @@ namespace KrakenClient
             bool validate = false, 
             Dictionary<string, string> close = null)
         {
-            string reqs = string.Format("&pair={0}&type={1}&ordertype={2}&volume={3}&leverage={4}&validate={5}", pair, type, ordertype, volume, leverage,validate);
+            string reqs = string.Format("&pair={0}&type={1}&ordertype={2}&volume={3}&leverage={4}", pair, type, ordertype, volume,leverage);
             if (price.HasValue)
                 reqs += string.Format("&price={0}", price.Value);
             if (price2.HasValue)
@@ -722,12 +722,32 @@ namespace KrakenClient
                 reqs += string.Format("&oflags={0}", oflags);
             if (!string.IsNullOrEmpty(userref))
                 reqs += string.Format("&userref={0}", userref);
+            if (validate)
+                reqs += "&validate=true";
             if (close != null)
             {
                 string closeString = string.Format("&close[ordertype]={0}&close[price]={1}&close[price2]={2}",close["ordertype"],close["price"],close["price2"]);
                 reqs += closeString;               
             }
             return QueryPrivate("AddOrder", reqs) as JsonObject;
+        }
+
+        public JsonObject AddOrder(KrakenOrder krakenOrder)
+        {
+            return AddOrder(pair : krakenOrder.Pair,
+                            type : krakenOrder.Type,
+                            ordertype : krakenOrder.OrderType,
+                            volume : krakenOrder.Volume,
+                            price : krakenOrder.Price,
+                            price2 : krakenOrder.Price2,
+                            leverage : krakenOrder.Leverage??"none",
+                            position : krakenOrder.Position??string.Empty,
+                            oflags : krakenOrder.OFlags??string.Empty,
+                            starttm: krakenOrder.Starttm ?? string.Empty,
+                            expiretm: krakenOrder.Expiretm ?? string.Empty,
+                            userref: krakenOrder.Userref ?? string.Empty,
+                            validate : krakenOrder.Validate,
+                            close : null);
         }
 
         /// <summary>
