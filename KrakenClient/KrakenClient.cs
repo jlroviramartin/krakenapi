@@ -222,6 +222,7 @@ namespace KrakenClient
             if (pairs == null)
             {
                 //do nothing, had to pass an empty string.
+
             }
             else if (pairs.Count() == 0)
             {
@@ -237,8 +238,7 @@ namespace KrakenClient
                 }
                 pairString.Length--; //disregard trailing comma    
             }
-            
-
+           
             return QueryPublic("AssetPairs",pairString.ToString()) as JsonObject;
         }
 
