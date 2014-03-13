@@ -9,6 +9,7 @@ using System.Net;
 using System.Configuration;
 using System.IO;
 using System.Security.Cryptography;
+using PennedObjects.RateLimiting;
 
 namespace KrakenClient
 {
@@ -20,6 +21,8 @@ namespace KrakenClient
         int _version;
         string _key;
         string _secret;
+        //RateGate is was taken from http://www.jackleitch.net/2010/10/better-rate-limiting-with-dot-net/
+        RateGate _rateGate;
 
         public KrakenClient()
         {
@@ -27,9 +30,15 @@ namespace KrakenClient
             _version = int.Parse(ConfigurationManager.AppSettings["KrakenApiVersion"]);
             _key = ConfigurationManager.AppSettings["KrakenKey"];
             _secret = ConfigurationManager.AppSettings["KrakenSecret"];
+            _rateGate = new RateGate(1, TimeSpan.FromSeconds(5));
             
         }
 
+        ~KrakenClient()
+        {
+            _rateGate.Dispose();
+        }
+        
         private JsonObject QueryPublic(string a_sMethod, string props=null)
         {
             string address = string.Format("{0}/{1}/public/{2}", _url, _version, a_sMethod);
@@ -50,6 +59,9 @@ namespace KrakenClient
             //Make the request
             try
             {
+                //Wait for RateGate
+                _rateGate.WaitToProceed();
+
                 using (WebResponse webResponse = webRequest.GetResponse())
                 {
                     using (Stream str = webResponse.GetResponseStream())
@@ -122,6 +134,9 @@ namespace KrakenClient
             //Make the request
             try
             {
+                //Wait for RateGate
+                _rateGate.WaitToProceed();
+
                 using (WebResponse webResponse = webRequest.GetResponse())
                 {
                     using (Stream str = webResponse.GetResponseStream())
@@ -752,7 +767,7 @@ namespace KrakenClient
                             expiretm: krakenOrder.Expiretm ?? string.Empty,
                             userref: krakenOrder.Userref ?? string.Empty,
                             validate : krakenOrder.Validate,
-                            close : null);
+                            close : krakenOrder.Close);
         }
 
         /// <summary>

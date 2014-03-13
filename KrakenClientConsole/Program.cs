@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Threading;
 using Jayrock.Json;
 using Jayrock.Json.Conversion;
+using System.Diagnostics;
 
 
 namespace KrakenClientConsole
@@ -112,12 +113,24 @@ namespace KrakenClientConsole
 
             #region Using the broker helper
 
-            KrakenOrder openingOrder = broker.CreateOpeningOrder(OrderType.buy, KrakenOrderType.limit, 300, 10,viqc:true,validateOnly: false);
+            //KrakenOrder openingOrder = broker.CreateOpeningOrder2(OrderType.buy, KrakenOrderType.stop_loss, 420.1M, 10,415M,viqc:true,validateOnly: false);
 
-            PlaceOrder(ref openingOrder, false);
+            //PlaceOrder(ref openingOrder, true);
 
-            CancelOrder(ref openingOrder);
-            
+            //CancelOrder(ref openingOrder);
+
+            Stopwatch stopwatch = new Stopwatch();
+            KrakenOrder order = new KrakenOrder();
+            order.TxId = "OYNRKT-RQB5J-OM4DQU";
+            for (int i = 1; i <= 10; i++)
+            {
+
+                stopwatch.Start();
+                var res = broker.RefreshOrder(ref order);
+                stopwatch.Stop();
+                Console.WriteLine(stopwatch.Elapsed.ToString());
+                stopwatch.Start();
+            }
             #endregion    
 
             Console.ReadKey();
@@ -156,7 +169,7 @@ namespace KrakenClientConsole
                         Console.WriteLine(string.Format("The order was cancelled. Reason: {0}", order.Reason));
                         break;
                     case PlaceOrderResultType.exception:
-                        Console.WriteLine(string.Format("Something went wrong. {0}", order.Reason));
+                        Console.WriteLine(string.Format("Something went wrong. {0}", placeOrderResult.Exception.Message));
                         break;
                     default:
                         Console.WriteLine(string.Format("unknown PlaceOrderResultType {0}", placeOrderResult.ResultType));

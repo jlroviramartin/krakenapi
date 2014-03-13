@@ -51,6 +51,27 @@ namespace KrakenClientConsole
             
         }
 
+        public KrakenOrder CreateOpeningOrder2(OrderType type, KrakenOrderType orderType, decimal enteringPrice, decimal volume, decimal stopPrice, string pair = "XXBTZEUR", bool viqc = false, bool validateOnly = false)
+        {
+            KrakenOrder order = new KrakenOrder();
+
+            order.Pair = pair;
+            order.Type = type.ToString();
+            order.OrderType = orderType.ToString().Replace("_", "-");
+            order.Price = enteringPrice;
+            order.Volume = volume;
+            if (viqc)
+                order.OFlags = OFlag.viqc.ToString();
+            order.Validate = validateOnly;
+            var closeDictionary = new Dictionary<string,string>();
+            closeDictionary.Add("ordertype","stop-loss");
+            closeDictionary.Add("price",stopPrice.ToString());
+            closeDictionary.Add("price2", null);
+            order.Close = closeDictionary;
+          
+            return order;
+        }
+
         /// <summary>
         /// Submit an order to Kraken. The order passed by reference will be updated with info set by Kraken.
         /// </summary>
@@ -293,6 +314,107 @@ namespace KrakenClientConsole
                 refreshOrderResult.ResultType = RefreshOrderResultType.exception;
                 refreshOrderResult.Exception = ex;
                 return refreshOrderResult;
+            }
+        }
+
+        public GetOrderResult GetOpenOrders()
+        {
+            GetOrderResult getOrderResult = new GetOrderResult();
+
+            try
+            {
+                JsonObject res = client.GetOpenOrders();
+
+                JsonArray error = (JsonArray)res["error"];
+                if (error.Count() > 0)
+                {
+                    getOrderResult.ResultType = GetOrderResultType.error;
+                    List<string> errorList = new List<string>();
+                    foreach (var item in error)
+                    {
+                        errorList.Add(item.ToString());
+                    }
+                    getOrderResult.Errors = errorList;
+                    return getOrderResult;
+                }
+                else
+                {
+                    JsonObject result = (JsonObject)res["result"];
+                    JsonObject openOrders = (JsonObject)result["open"];
+                    var orderIds = openOrders.Names;
+                    List<KrakenOrder> orderList = new List<KrakenOrder>();
+
+                    foreach (var id in orderIds)
+                    {
+
+                        JsonObject orderDetails = (JsonObject)openOrders[id.ToString()];
+
+                        if (orderDetails == null)
+                        {
+                            getOrderResult.ResultType = GetOrderResultType.error;
+                            return getOrderResult;
+                        }
+                        else
+                        {
+                            //string pair =  orderDetails["pair"].ToString();
+                            string txid = id.ToString();
+                            JsonObject descr = (JsonObject)orderDetails["descr"];
+                            string pair = descr["pair"].ToString();
+                            string type = descr["type"].ToString();
+                            string ordertype = descr["ordertype"].ToString();
+                            string price = descr["price"].ToString();
+                            string price2 = descr["price2"].ToString();
+                            string leverage = descr["leverage"].ToString();
+
+                            string status = (orderDetails["status"] != null) ? orderDetails["status"].ToString() : null;
+                            string reason = (orderDetails["reason"] != null) ? orderDetails["reason"].ToString() : null;
+                            string openTime = (orderDetails["opentm"] != null) ? orderDetails["opentm"].ToString() : null;
+                            string closeTime = (orderDetails["closetm"] != null) ? orderDetails["closetm"].ToString() : null;
+                            string vol_exec = (orderDetails["vol_exec"] != null) ? orderDetails["vol_exec"].ToString() : null;
+                            string cost = (orderDetails["cost"] != null) ? orderDetails["cost"].ToString() : null;
+                            string fee = (orderDetails["fee"] != null) ? orderDetails["fee"].ToString() : null;
+                            string averagePrice = (orderDetails["price"] != null) ? orderDetails["price"].ToString() : null;
+                            string misc = (orderDetails["misc"] != null) ? orderDetails["misc"].ToString() : null;
+                            string oflags = (orderDetails["oflags"] != null) ? orderDetails["oflags"].ToString() : null;
+                            JsonArray tradesArray = (JsonArray)orderDetails["trades"];
+                            string trades = null;
+                            if (tradesArray != null)
+                            {
+
+                                foreach (var trade in tradesArray)
+                                {
+                                    trades += trade.ToString() + ",";
+                                }
+                                trades = trades.TrimEnd(',');
+                            }
+
+                            KrakenOrder order = new KrakenOrder();
+
+                            order.Status = status;
+                            order.Reason = reason;
+                            order.OpenTime = openTime;
+                            order.CloseTime = closeTime;
+                            order.VolumeExecuted = double.Parse(vol_exec);
+                            order.Cost = decimal.Parse(cost);
+                            order.Fee = decimal.Parse(fee);
+                            order.AveragePrice = decimal.Parse(averagePrice);
+                            order.Info = misc;
+                            order.OFlags = oflags;
+                            order.Trades = trades;
+
+                            orderList.Add(order);
+                        }
+                    }
+                    getOrderResult.Order = orderList.FirstOrDefault(); ;
+                    getOrderResult.ResultType = GetOrderResultType.success;
+                    return getOrderResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                getOrderResult.ResultType = GetOrderResultType.exception;
+                getOrderResult.Exception = ex;
+                return getOrderResult;
             }
         }
 

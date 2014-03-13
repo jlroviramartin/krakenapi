@@ -1,6 +1,6 @@
 C# Kraken API
 
-.Net implementation for Kraken's REST API.
+.Net implementation for Kraken's REST API. Handles rate-limiting (1 request/5s) using Jack Leitch's RateGate.
 
 The solution includes two projects:
 

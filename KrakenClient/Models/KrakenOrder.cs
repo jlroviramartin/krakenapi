@@ -34,7 +34,10 @@ namespace KrakenClient
         //User ref id. Optional
         public string Userref { get; set; }
         //Validate inputs only. do not submit order. Optional
-        public bool Validate { get; set; } 
+        public bool Validate { get; set; }
+        //Closing order details
+        public Dictionary<string, string> Close { get; set; }
+ 
         #endregion
 
         #region Properties set by Kraken during execution (all nullable)
