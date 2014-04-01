@@ -14,7 +14,7 @@ using PennedObjects.RateLimiting;
 namespace KrakenClient
 {
     
-    public class KrakenClient
+    public class KrakenClient : IDisposable
     {
 
         string _url;
@@ -33,10 +33,27 @@ namespace KrakenClient
             _rateGate = new RateGate(1, TimeSpan.FromSeconds(5));
             
         }
+        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_rateGate != null)
+                    _rateGate.Dispose();
+            }
+            
+            _rateGate = null;
+        }
 
         ~KrakenClient()
         {
-            _rateGate.Dispose();
+            Dispose(false);
         }
         
         private JsonObject QueryPublic(string a_sMethod, string props=null)
