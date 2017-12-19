@@ -1,27 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Jayrock.Json;
-using Jayrock.Json.Conversion;
-using System.Net;
-using System.Configuration;
-using System.IO;
-using System.Security.Cryptography;
-using PennedObjects.RateLimiting;
-
-namespace KrakenClient
+﻿namespace KrakenClient
 {
-    
+    using JackLeitch.RateGate;
+    using Jayrock.Json;
+    using Jayrock.Json.Conversion;
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Security.Cryptography;
+    using System.Text;
+
     public class KrakenClient : IDisposable
     {
-
         string _url;
         int _version;
         string _key;
         string _secret;
-        //RateGate is was taken from http://www.jackleitch.net/2010/10/better-rate-limiting-with-dot-net/
+        //RateGate was taken from http://www.jackleitch.net/2010/10/better-rate-limiting-with-dot-net/
         RateGate _rateGate;
 
         public KrakenClient()
@@ -187,7 +184,6 @@ namespace KrakenClient
 
         #region Public queries
 
-
         //Get public server time
         //This is to aid in approximatig the skew time between the server and client
         public JsonObject GetServerTime()
@@ -254,7 +250,6 @@ namespace KrakenClient
             if (pairs == null)
             {
                 //do nothing, had to pass an empty string.
-
             }
             else if (pairs.Count() == 0)
             {
@@ -312,7 +307,6 @@ namespace KrakenClient
          */
         public JsonObject GetTicker(List<string> pairs)
         {
-
             if (pairs == null)
             {
                 return null;

@@ -1,23 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using KrakenClient;
-using System.Collections;
-using System.Globalization;
-using System.Threading;
-using Jayrock.Json;
-using Jayrock.Json.Conversion;
-using System.Diagnostics;
-
-
-namespace KrakenClientConsole
+﻿namespace KrakenClientConsole
 {
+    using KrakenClient;
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+
     public class Program
     {
-
-        public static  KrakenClient.KrakenClient client = new KrakenClient.KrakenClient();
+        public static KrakenClient client = new KrakenClient();
         public static Broker broker = new Broker();
         
         public static void Main(string[] args)
@@ -35,8 +25,8 @@ namespace KrakenClientConsole
             //var assetPairs = client.GetAssetPairs(new List<string> { "XXBTZEUR" });
             //Console.WriteLine("asset pairs: " + assetPairs.ToString() + "\n\n");
 
-            //var ticker = client.GetTicker(new List<string> { "XXBTZEUR" });
-            //Console.WriteLine("ticker: " + ticker.ToString() + "\n\n");
+            var ticker = client.GetTicker(new List<string> { "XXBTZEUR" });
+            Console.WriteLine("ticker: " + ticker.ToString() + "\n\n");
 
             //var depth = client.GetOrderBook("XXBTZUSD", 1);
             //Console.WriteLine("depth: " + depth.ToString() + "\n\n");
@@ -142,7 +132,6 @@ namespace KrakenClientConsole
         {
             try
             {
-
                 Console.WriteLine("Placing order...");
 
                 var placeOrderResult = broker.PlaceOrder(ref order,wait);
